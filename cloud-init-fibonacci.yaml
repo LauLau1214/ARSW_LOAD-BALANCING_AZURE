@@ -1,0 +1,30 @@
+#cloud-config
+# Instala y deja corriendo FibonacciApp (puerto 3000) al crear la VM.
+# Pegar en: Crear VM -> pestaña "Opciones avanzadas" -> "Datos personalizados".
+package_update: true
+packages:
+  - git
+  - nodejs
+  - npm
+
+write_files:
+  - path: /etc/systemd/system/fibonacci.service
+    content: |
+      [Unit]
+      Description=FibonacciApp (ARSW Load Balancing lab)
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      WorkingDirectory=/opt/lab/FibonacciApp
+      ExecStart=/usr/bin/node FibonacciApp.js
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - git clone https://github.com/LauLau1214/ARSW_LOAD-BALANCING_AZURE.git /opt/lab
+  - cd /opt/lab/FibonacciApp && npm install
+  - systemctl daemon-reload
+  - systemctl enable --now fibonacci
