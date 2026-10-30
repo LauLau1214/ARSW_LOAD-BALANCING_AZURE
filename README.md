@@ -25,9 +25,19 @@ Cuando un conjunto de usuarios consulta un enésimo número (superior a 1000000)
 
 ![Imágen 1](images/part1/part1-vm-basic-config.png)
 
+VM VERTICAL-SCALABILITY. Máquina virtual Linux (Ubuntu) creada en el grupo de recursos SCALABILITY_LAB, con usuario scalability_lab y autenticación por llave SSH. La captura muestra la IP pública (usada para SSH y para acceder a la app por el puerto 3000), la IP privada dentro de la VNet, la red virtual/subred asociada y el tamaño Standard D2s_v4 (2 vCPU, 8 GiB RAM).
+
+![CREACION VM](images/part1/CreacionVM.png)
+
+
 2. Para conectarse a la VM use el siguiente comando, donde las `x` las debe remplazar por la IP de su propia VM (Revise la sección "Connect" de la virtual machine creada para tener una guía más detallada).
 
     `ssh scalability_lab@xxx.xxx.xxx.xxx`
+
+Conexión SSH. Acceso a la VM con ssh scalability_lab@<IP_PUBLICA>, autenticando con la llave pública configurada al crear la VM. Se ve el banner de Ubuntu con el uso de CPU, memoria y disco, y la IP privada 172.16.0.4. El prompt scalability_lab@VERTICAL-SCALABILITY confirma que estamos dentro de la máquina.
+
+![SSH](images/part1/SSH_VM.png)
+
 
 3. Instale node, para ello siga la sección *Installing Node.js and npm using NVM* que encontrará en este [enlace](https://linuxize.com/post/how-to-install-node-js-on-ubuntu-18.04/).
 4. Para instalar la aplicación adjunta al Laboratorio, suba la carpeta `FibonacciApp` a un repositorio al cual tenga acceso y ejecute estos comandos dentro de la VM:
@@ -42,9 +52,26 @@ Cuando un conjunto de usuarios consulta un enésimo número (superior a 1000000)
 
     ` node FibonacciApp.js`
 
+Paso 3: se instaló Node con NVM: node -v → v18.20.8, npm -v → 10.8.2.
+Paso 4: se clonó el repositorio propio (git clone .../LauLau1214/ARSW_LOAD-BALANCING_AZURE.git) que contiene la carpeta FibonacciApp, y se instalaron las dependencias con npm install (51 paquetes; las advertencias de vulnerabilidades y del lockfile antiguo son del proyecto del lab y no afectan la prueba).
+Paso 5: node FibonacciApp.js inicia el servidor: Fibonacci App listening on port 3000! y atiende la petición de prueba (calculate 6 number).
+
+![INSTALACION](images/part1/PUERTO_VM.png)
+
+Ejecución persistente con nohup. Con node FibonacciApp.js el proceso depende de la sesión SSH y muere al cerrarla (SIGHUP). Para evitarlo se lanzó con nohup node FibonacciApp.js > app.log 2>&1 &: ignora SIGHUP, envía la salida a app.log y corre en segundo plano ([1] 2733 es el PID). Se verificó con curl localhost:3000/fibonacci/6, que devolvió The answer is 8. (El lab propone forever; nohup cumple el mismo objetivo sin instalar nada.)
+
+![EJECUCION](images/part1/INICIO_FIBO.png)
+
 6. Antes de verificar si el endpoint funciona, en Azure vaya a la sección de *Networking* y cree una *Inbound port rule* tal como se muestra en la imágen. Para verificar que la aplicación funciona, use un browser y user el endpoint `http://xxx.xxx.xxx.xxx:3000/fibonacci/6`. La respuesta debe ser `The answer is 8`.
 
 ![](images/part1/part1-vm-3000InboudRule.png)
+
+Regla de entrada del puerto 3000. Reglas de entrada del grupo de seguridad de red VERTICAL-SCALABILITYNSG: default-allow-ssh (prioridad 1000, TCP 22) y open-port-3000 (prioridad 1010, puerto 3000, origen cualquiera, acción Allow). Las reglas por defecto (65000-65500) permiten solo tráfico interno de la VNet y del balanceador, y DenyAllInBound bloquea todo lo demás.
+
+Por qué es necesaria: sin open-port-3000, la petición HTTP desde Internet cae en DenyAllInBound y nunca llega a la app, aunque esté corriendo.
+
+![PUERTO](images/part1/reglapuerto.png)
+
 
 7. La función que calcula en enésimo número de la secuencia de Fibonacci está muy mal construido y consume bastante CPU para obtener la respuesta. Usando la consola del Browser documente los tiempos de respuesta para dicho endpoint usando los siguintes valores:
     * 1000000
@@ -56,11 +83,24 @@ Cuando un conjunto de usuarios consulta un enésimo número (superior a 1000000)
     * 1060000
     * 1070000
     * 1080000
-    * 1090000    
+    * 1090000   
+
+Verificación del endpoint y tiempos de respuesta. En el navegador, http://<IP>:3000/fibonacci/6 responde The answer is 8, lo que confirma que la regla de entrada del puerto 3000 está activa. En la consola se ejecutó un script que llama en secuencia a /fibonacci/N con N de 1.000.000 a 1.090.000 y mide el tiempo con performance.now(). A la derecha, la terminal SSH muestra cada petición recibida por la app.
+
+![TABLA 1](images/part1/NAVEGADOR1.png)
+
+Interpretación: una sola petición tarda 12-14.5 s. La función no hace I/O: calcula con números gigantes y mantiene la CPU ocupada. El tiempo crece con N (+19% de tiempo para +9% de N).
+
 
 8. Dírijase ahora a Azure y verifique el consumo de CPU para la VM. (Los resultados pueden tardar 5 minutos en aparecer).
 
 ![Imágen 2](images/part1/part1-vm-cpu.png)
+
+Consumo de CPU tras las 10 peticiones. Gráfica de Percentage CPU (Max) en Azure Monitor. El pico de ~48.7% corresponde a las 10 peticiones secuenciales. El tramo plano de ~37% al inicio es el arranque de la VM, no la app.
+Interpretación: Node ejecuta JavaScript en un solo hilo: la función satura un núcleo al 100%. Como D2s_v4 tiene 2 vCPU, eso equivale a ~50% del total.
+
+![TABLA 1- GRAFICA](images/part1/NAVEGADOR1_GRAFICA.png)
+
 
 9. Ahora usaremos Postman para simular una carga concurrente a nuestro sistema. Siga estos pasos.
     * Instale newman con el comando `npm install newman -g`. Para conocer más de Newman consulte el siguiente [enlace](https://learning.getpostman.com/docs/postman/collection-runs/command-line-integration-with-newman/).
@@ -72,30 +112,172 @@ Cuando un conjunto de usuarios consulta un enésimo número (superior a 1000000)
     newman run ARSW_LOAD-BALANCING_AZURE.postman_collection.json -e [ARSW_LOAD-BALANCING_AZURE].postman_environment.json -n 10 &
     newman run ARSW_LOAD-BALANCING_AZURE.postman_collection.json -e [ARSW_LOAD-BALANCING_AZURE].postman_environment.json -n 10
     ```
+Resumen de Newman con 2 ejecuciones en paralelo.
+
+![PRUEBA 1](images/part1/PRUEBA1_T1.png)
+![PRUEBA 1](images/part1/PRUEBA1_T2.png)
+
+Interpretación: con dos clientes simultáneos el promedio sube de ~12 s (una sola) a ~17-18 s porque Node atiende de a una petición y las demás esperan en cola. Los fallos son read ECONNRESET: la conexión se cortó mientras esperaba, porque el servidor saturado no respondió a tiempo. Fallaron 6 de 20 peticiones (30%), por lo que no se cumple “todas las peticiones deben ser respondidas”.
+
+CPU durante la carga concurrente (D2s_v4). La CPU sube a ~49.6% y se mantiene al ejecutar Newman. La línea punteada final corresponde a datos aún no publicados por Azure.
+
+Interpretación: casi igual que con una sola petición (~49%): el segundo cliente no usa otro núcleo, solo alarga la cola del único hilo de Node. El CPU total no pasa del 50%, pero ese único núcleo está al 100% y por eso fallan peticiones.
+
+![PRUEBA 1-GRAFICA](images/part1/PRUEBA1_GRAFICA.png)
+
 
 10. La cantidad de CPU consumida es bastante grande y un conjunto considerable de peticiones concurrentes pueden hacer fallar nuestro servicio. Para solucionarlo usaremos una estrategia de Escalamiento Vertical. En Azure diríjase a la sección *size* y a continuación seleccione el tamaño `B2ms`.
 
 ![Imágen 3](images/part1/part1-vm-resize.png)
 
+![Cambio SIZE](images/part1/principal1.png)
+
 11. Una vez el cambio se vea reflejado, repita el paso 7, 8 y 9.
+
+![Navegador](images/part1/NAVEGADOR.png)
+
+App funcionando tras el cambio de tamaño. Tras escalar la VM a D4s_v4 (4 vCPU, 16 GiB) la máquina se reinició y el proceso node se perdió. Se volvió a lanzar node FibonacciApp.js y el endpoint /fibonacci/6 responde The answer is 8. Esto evidencia el efecto del resize: hay downtime y la app no se levanta sola.
+
+Tiempos de respuesta en D4s_v4. Misma prueba del paso 7. A la derecha, la terminal tras reconectar por SSH: la sesión nueva (Last login) confirma el reinicio.
+
+![TABLA 2](images/part1/NAVEGADOR2.png)
+
+Interpretación: mejora de ~7%. Una sola petición usa un núcleo; duplicar los vCPU no la acelera, solo mejora un poco la velocidad del núcleo.
+
+
+![TABLA 2-GRAFICA](images/part1/NAVEGADOR2_GRAFICA.png)
+
+CPU antes y después del resize. Pico de ~49% a las 6:47 (D2s_v4, 2 vCPU) y meseta de ~24% desde las 7:02 (D4s_v4, 4 vCPU) con la misma carga de 2 ejecuciones paralelas.
+Interpretación: el porcentaje cae a la mitad porque hay el doble de núcleos, pero un núcleo sigue al 100% (Node es mono-hilo). Mejoró la métrica, no el servicio.
+
+![PRUEBA 3](images/part1/PRUEBA3_T1.png)
+
+![PRUEBA 3](images/part1/PRUEBA3_T2.png)
+
+Comparación con D2s_v4: promedios 18.2/16.9 s → 16.9/18.0 s; fallos 2 y 4 → 3 y 4 (6 → 7 de 20). No hay mejora relevante: el cuello de botella es el hilo único de Node, no la cantidad de CPU.
+
+![PRUEBA 2](images/part1/PRUEBA2_T1.png)
+
+![PRUEBA 2](images/part1/PRUEBA2_T2.png)
+
+![PRUEBA 2](images/part1/PRUEBA2_T3.png)
+
+![PRUEBA 2](images/part1/PRUEBA2_T4.png)
+
+Interpretación: al duplicar los clientes el tiempo promedio se multiplica ×2.2 y el máximo llega a ~57 s. El sistema no mejora, empeora: la cola de un solo hilo crece linealmente.
+
+![PRUEBA 2_GRAFICA](images/part1/PRUEBA2_GRAFICA.png)
+
+CPU con 4 ejecuciones paralelas. El último bloque (7:13-7:25) se mantiene en ~24% durante ~5 min, igual que con 2 paralelas. Cae al terminar la prueba.
+
+Interpretación: aunque hay 4 clientes, la CPU total no sube: Node solo usa 1 de los 4 núcleos. Lo que crece no es el consumo sino la espera. Por eso escalar verticalmente no cumple el escenario de calidad.
+
 12. Evalue el escenario de calidad asociado al requerimiento no funcional de escalabilidad y concluya si usando este modelo de escalabilidad logramos cumplirlo.
 13. Vuelva a dejar la VM en el tamaño inicial para evitar cobros adicionales.
+
+
+Videos 
+
 
 **Preguntas**
 
 1. ¿Cuántos y cuáles recursos crea Azure junto con la VM?
+
+Azure creó 6 recursos dentro del grupo SCALABILITY_LAB:
+
+Máquina virtual VERTICAL-SCALABILITY
+Disco del sistema operativo (..._OsDisk_1_...)
+Interfaz de red (VERTICAL-SCALABILITYVMNic)
+Dirección IP pública (VERTICAL-SCALABILITYPublicIP)
+Grupo de seguridad de red (VERTICAL-SCALABILITYNSG)
+Red virtual (VERTICAL-SCALABILITYVNET)
+
 2. ¿Brevemente describa para qué sirve cada recurso?
+
+Máquina virtual: Servidor (CPU y RAM) donde corre Ubuntu y la aplicación.
+Disco del SO: Almacenamiento persistente con el sistema operativo y los archivos; se conserva aunque la VM se apague.
+Interfaz de red (NIC): Tarjeta de red virtual que conecta la VM con la red y le asigna sus direcciones IP.
+IP pública: Dirección accesible desde Internet, usada para SSH y para consumir el servicio por el puerto 3000.
+Grupo de seguridad de red (NSG): Firewall con reglas de entrada y salida por puerto, protocolo y origen.
+Red virtual (VNet): Red privada y aislada donde viven la VM y su NIC (IP privada de la subred).
+
 3. ¿Al cerrar la conexión ssh con la VM, por qué se cae la aplicación que ejecutamos con el comando `npm FibonacciApp.js`? ¿Por qué debemos crear un *Inbound port rule* antes de acceder al servicio?
+
+- Con node FibonacciApp.js el proceso corre en primer plano como proceso hijo de la sesión SSH. Al cerrar la conexión, el sistema envía la señal SIGHUP a la sesión y esta termina a sus procesos hijos, incluida la aplicación. Para evitarlo se desacopló el proceso de la sesión con nohup node FibonacciApp.js > app.log 2>&1 & (alternativas: forever, pm2 o un servicio systemd).
+- El NSG bloquea por defecto todo el tráfico entrante de Internet, salvo lo que una regla permita (inicialmente solo SSH, puerto 22). La regla DenyAllInBound descarta cualquier otra petición. Sin la regla open-port-3000, las peticiones HTTP nunca llegan a la aplicación aunque esté en ejecución (Imagen de reglas NSG).
+
 4. Adjunte tabla de tiempos e interprete por qué la función tarda tando tiempo.
+
+n	     D2s_v4 (ms)	D4s_v4 (ms)
+1000000	    12210	       11359
+1010000	    12433	       11551
+1020000	    12771	       11677
+1030000	    13059	       11840
+1040000	    13279	       12250
+1050000	    13347	       12454
+1060000	    13888	       12657
+1070000	    13735	       13054
+1080000	    14027	       12926
+1090000	    14511	       13394
+
+Interpretación: una sola petición tarda entre 12 y 14.5 segundos. La función es muy costosa: calcula un número de Fibonacci con cifras gigantes (la respuesta pesa ~209 kB) usando un algoritmo ineficiente y no tiene esperas de entrada/salida, por lo que mantiene la CPU ocupada durante todo el cálculo. Además, el tiempo crece más rápido que n: de 1.000.000 a 1.090.000 (+9%) el tiempo sube ~19% en D2s_v4, porque cada paso opera con números más grandes. 
+
 5. Adjunte imágen del consumo de CPU de la VM e interprete por qué la función consume esa cantidad de CPU.
+
+![TABLA 1- GRAFICA](images/part1/NAVEGADOR1_GRAFICA.png)
+
+Interpretación: el consumo llega a ~49%, no al 100%. Node.js ejecuta JavaScript en un solo hilo, así que la función satura un núcleo al 100%; como D2s_v4 tiene 2 vCPU, eso equivale a ~50% de la CPU total de la VM. El otro núcleo queda sin usar. (El tramo plano de ~37% al inicio de la primera gráfica corresponde al arranque de la VM, no a la aplicación.)
+
 6. Adjunte la imagen del resumen de la ejecución de Postman. Interprete:
     * Tiempos de ejecución de cada petición.
     * Si hubo fallos documentelos y explique.
+
+![PRUEBA 1](images/part1/PRUEBA1_T1.png)
+![PRUEBA 1](images/part1/PRUEBA1_T2.png)
+
+- Tiempos de ejecución: una petición sola tarda ~12 s; con dos clientes simultáneos el promedio sube a ~17-18 s y el máximo a ~24 s, porque Node atiende de a una petición y las otras esperan en cola.
+- Fallos: hubo 6 fallos en 20 peticiones (30%), todos read ECONNRESET: la conexión fue cerrada mientras esperaba respuesta, porque el servidor saturado no alcanzó a atenderla a tiempo. Las “iterations” aparecen en 0 fallos porque no hay assertions; solo se contabiliza el error de conexión.
+
+
 7. ¿Cuál es la diferencia entre los tamaños `B2ms` y `B1ls` (no solo busque especificaciones de infraestructura)?
+
+Ambas pertenecen a la serie B (burstable): tienen un rendimiento base reducido y acumulan créditos de CPU mientras están por debajo de él, que consumen para ráfagas de hasta el 100%. B1ls es la más pequeña (1 vCPU, ~0.5 GiB de RAM, rendimiento base muy bajo); B2ms tiene 2 vCPU, 8 GiB de RAM, un rendimiento base mayor y más créditos. La diferencia importante es de comportamiento: con carga sostenida (como nuestro cálculo de Fibonacci) los créditos se agotan y la VM queda limitada a su rendimiento base, por lo que estas VM sirven para cargas esporádicas y no para CPU constante. B2ms solo aguanta más tiempo y no elimina el problema.
+
 8. ¿Aumentar el tamaño de la VM es una buena solución en este escenario?, ¿Qué pasa con la FibonacciApp cuando cambiamos el tamaño de la VM?
+
+No es una buena solución para este escenario. Probamos subir de D2s_v4 a D4s_v4 y los tiempos de respuesta y los fallos no mejoraron de forma relevante, porque la aplicación usa un único hilo y no aprovecha los núcleos adicionales.
+Respecto a la aplicación: al cambiar el tamaño la VM se reinicia, el proceso node se pierde y hay que volver a lanzarlo manualmente (Imagen tras el resize). El código y los archivos permanecen en el disco.
+
 9. ¿Qué pasa con la infraestructura cuando cambia el tamaño de la VM? ¿Qué efectos negativos implica?
+
+Azure detiene la VM, la reasigna a hardware que soporte el nuevo tamaño y la vuelve a iniciar, reconectando el mismo disco y la misma NIC. Efectos negativos:
+
+- Downtime: el servicio no está disponible durante el cambio.
+- Se pierden los procesos en memoria (la app no se levanta sola).
+- Posible cambio de IP si la IP pública es dinámica (la nuestra era estándar/estática y se mantuvo).
+- Mayor costo por hora.
+- Es un cambio manual y limitado por el tamaño máximo del hardware; no es elástico ni automático.
+
 10. ¿Hubo mejora en el consumo de CPU o en los tiempos de respuesta? Si/No ¿Por qué?
+
+- Consumo de CPU: sí, en porcentaje: pasó de ~49% (D2s_v4) a ~24% (D4s_v4) con la misma carga, porque ahora hay 4 núcleos en lugar de 2 y la carga sigue ocupando uno.
+- Tiempos de respuesta: prácticamente no. Una sola petición mejoró ~7% (12.2 s → 11.4 s) y con 2 ejecuciones paralelas de Postman los promedios siguieron en ~17 s (18.2/16.9 s → 16.9/18.0 s) con los mismos fallos (6 → 7 de 20). Mejoró la métrica de CPU, pero no la calidad del servicio: el cuello de botella es el hilo único de Node.
+
 11. Aumente la cantidad de ejecuciones paralelas del comando de postman a `4`. ¿El comportamiento del sistema es porcentualmente mejor?
+
+No, es peor. Resultados en D4s_v4 (Imágenes T1 a T4):
+
+	T1	        T2	        T3	      T4
+Duración	4m 59.9s	4m 34.5s	4m 56.5s	4m 54.3s
+Promedio	43.4 s	39.0 s	34.4 s	37.7 s
+Mín / Máx	11.9 / 57.1 s	23.2 / 57.1 s	12.1 / 57.2 s	12.0 / 57.8 s
+Fallos	4	4	3	3
+1 petición	2 paralelas	4 paralelas
+Tiempo promedio	~12 s	~17.5 s	~38.6 s
+Tiempo máximo	~14 s	~23.8 s	~57 s
+Fallos	0	7/20 (35%)	14/40 (35%)
+
+Al duplicar los clientes (2 → 4), el tiempo promedio se multiplica por ~2.2 y el máximo llega a ~57 s; el porcentaje de fallos se mantiene en ~35%. La CPU total se quedó en ~24% (Imagen de CPU con 4 paralelas): no aumenta el consumo, aumenta la espera, porque todas las peticiones se encolan en un único hilo. El sistema no mejora al recibir más carga, se degrada.
 
 ### Parte 2 - Escalabilidad horizontal
 
