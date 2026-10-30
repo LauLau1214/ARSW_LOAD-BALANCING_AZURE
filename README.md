@@ -178,6 +178,8 @@ Interpretación: aunque hay 4 clientes, la CPU total no sube: Node solo usa 1 de
 
 Videos 
 
+![Video1](https://drive.google.com/file/d/1TN1fA4-5X49dAXoR4kdJkchuQ2SZ5fBZ/view?usp=drive_link)
+![Video2](https://drive.google.com/file/d/1TGOLm27R7wvmSNc3C-X0rt2x3Vr9CUvK/view?usp=drive_link)
 
 **Preguntas**
 
