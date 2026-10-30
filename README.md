@@ -18,12 +18,12 @@ Cuando un conjunto de usuarios consulta un enésimo número (superior a 1000000)
 ### Parte 1 - Escalabilidad vertical
 
 1. Diríjase a el [Portal de Azure](https://portal.azure.com/) y a continuación cree una maquina virtual con las características básicas descritas en la imágen 1 y que corresponden a las siguientes:
-    * Resource Group = SCALABILITY_LAB
-    * Virtual machine name = VERTICAL-SCALABILITY
-    * Image = Ubuntu Server 
-    * Size = Standard B1ls
-    * Username = scalability_lab
-    * SSH publi key = Su llave ssh publica
+   * Resource Group = SCALABILITY_LAB
+   * Virtual machine name = VERTICAL-SCALABILITY
+   * Image = Ubuntu Server
+   * Size = Standard B1ls
+   * Username = scalability_lab
+   * SSH publi key = Su llave ssh publica
 
 ![Imágen 1](images/part1/part1-vm-basic-config.png)
 
@@ -34,7 +34,7 @@ VM VERTICAL-SCALABILITY. Máquina virtual Linux (Ubuntu) creada en el grupo de r
 
 2. Para conectarse a la VM use el siguiente comando, donde las `x` las debe remplazar por la IP de su propia VM (Revise la sección "Connect" de la virtual machine creada para tener una guía más detallada).
 
-    `ssh scalability_lab@xxx.xxx.xxx.xxx`
+   `ssh scalability_lab@xxx.xxx.xxx.xxx`
 
 Conexión SSH. Acceso a la VM con ssh scalability_lab@<IP_PUBLICA>, autenticando con la llave pública configurada al crear la VM. Se ve el banner de Ubuntu con el uso de CPU, memoria y disco, y la IP privada 172.16.0.4. El prompt scalability_lab@VERTICAL-SCALABILITY confirma que estamos dentro de la máquina.
 
@@ -44,15 +44,15 @@ Conexión SSH. Acceso a la VM con ssh scalability_lab@<IP_PUBLICA>, autenticando
 3. Instale node, para ello siga la sección *Installing Node.js and npm using NVM* que encontrará en este [enlace](https://linuxize.com/post/how-to-install-node-js-on-ubuntu-18.04/).
 4. Para instalar la aplicación adjunta al Laboratorio, suba la carpeta `FibonacciApp` a un repositorio al cual tenga acceso y ejecute estos comandos dentro de la VM:
 
-    `git clone <your_repo>`
+   `git clone <your_repo>`
 
-    `cd <your_repo>/FibonacciApp`
+   `cd <your_repo>/FibonacciApp`
 
-    `npm install`
+   `npm install`
 
 5. Para ejecutar la aplicación puede usar el comando `npm FibinacciApp.js`, sin embargo una vez pierda la conexión ssh la aplicación dejará de funcionar. Para evitar ese compartamiento usaremos *forever*. Ejecute los siguientes comando dentro de la VM.
 
-    ` node FibonacciApp.js`
+   ` node FibonacciApp.js`
 
 Paso 3: se instaló Node con NVM: node -v → v18.20.8, npm -v → 10.8.2.
 Paso 4: se clonó el repositorio propio (git clone .../LauLau1214/ARSW_LOAD-BALANCING_AZURE.git) que contiene la carpeta FibonacciApp, y se instalaron las dependencias con npm install (51 paquetes; las advertencias de vulnerabilidades y del lockfile antiguo son del proyecto del lab y no afectan la prueba).
@@ -76,16 +76,16 @@ Por qué es necesaria: sin open-port-3000, la petición HTTP desde Internet cae 
 
 
 7. La función que calcula en enésimo número de la secuencia de Fibonacci está muy mal construido y consume bastante CPU para obtener la respuesta. Usando la consola del Browser documente los tiempos de respuesta para dicho endpoint usando los siguintes valores:
-    * 1000000
-    * 1010000
-    * 1020000
-    * 1030000
-    * 1040000
-    * 1050000
-    * 1060000
-    * 1070000
-    * 1080000
-    * 1090000   
+   * 1000000
+   * 1010000
+   * 1020000
+   * 1030000
+   * 1040000
+   * 1050000
+   * 1060000
+   * 1070000
+   * 1080000
+   * 1090000
 
 Verificación del endpoint y tiempos de respuesta. En el navegador, http://<IP>:3000/fibonacci/6 responde The answer is 8, lo que confirma que la regla de entrada del puerto 3000 está activa. En la consola se ejecutó un script que llama en secuencia a /fibonacci/N con N de 1.000.000 a 1.090.000 y mide el tiempo con performance.now(). A la derecha, la terminal SSH muestra cada petición recibida por la app.
 
@@ -105,10 +105,10 @@ Interpretación: Node ejecuta JavaScript en un solo hilo: la función satura un 
 
 
 9. Ahora usaremos Postman para simular una carga concurrente a nuestro sistema. Siga estos pasos.
-    * Instale newman con el comando `npm install newman -g`. Para conocer más de Newman consulte el siguiente [enlace](https://learning.getpostman.com/docs/postman/collection-runs/command-line-integration-with-newman/).
-    * Diríjase hasta la ruta `FibonacciApp/postman` en una maquina diferente a la VM.
-    * Para el archivo `[ARSW_LOAD-BALANCING_AZURE].postman_environment.json` cambie el valor del parámetro `VM1` para que coincida con la IP de su VM.
-    * Ejecute el siguiente comando.
+   * Instale newman con el comando `npm install newman -g`. Para conocer más de Newman consulte el siguiente [enlace](https://learning.getpostman.com/docs/postman/collection-runs/command-line-integration-with-newman/).
+   * Diríjase hasta la ruta `FibonacciApp/postman` en una maquina diferente a la VM.
+   * Para el archivo `[ARSW_LOAD-BALANCING_AZURE].postman_environment.json` cambie el valor del parámetro `VM1` para que coincida con la IP de su VM.
+   * Ejecute el siguiente comando.
 
     ```
     newman run ARSW_LOAD-BALANCING_AZURE.postman_collection.json -e [ARSW_LOAD-BALANCING_AZURE].postman_environment.json -n 10 &
@@ -175,13 +175,25 @@ CPU con 4 ejecuciones paralelas. El último bloque (7:13-7:25) se mantiene en ~2
 Interpretación: aunque hay 4 clientes, la CPU total no sube: Node solo usa 1 de los 4 núcleos. Lo que crece no es el consumo sino la espera. Por eso escalar verticalmente no cumple el escenario de calidad.
 
 12. Evalue el escenario de calidad asociado al requerimiento no funcional de escalabilidad y concluya si usando este modelo de escalabilidad logramos cumplirlo.
+
+**Evaluación del escenario de calidad (escalabilidad vertical):**
+
+| Condición del escenario | D2s_v4 (2 vCPU) | D4s_v4 (4 vCPU) | ¿Se cumple? |
+|---|---|---|---|
+| CPU ≤ 70 % | ~49 % | ~24 % | ✅ Sí |
+| Todas las peticiones respondidas (2 en paralelo) | 14/20 (70 %) | 13/20 (65 %) | ❌ No |
+| Todas las peticiones respondidas (4 en paralelo) | – | 26/40 (65 %) | ❌ No |
+
+**Conclusión:** con escalabilidad vertical **no se cumple** el escenario. La condición de CPU se cumple, e incluso "mejora" al escalar (de ~49 % a ~24 %), pero solo porque el mismo trabajo se reparte entre más núcleos en el porcentaje total. La condición que importa, que todas las peticiones sean respondidas, falla tanto en la VM pequeña como en la grande (~30-35 % de fallos `ECONNRESET`). El cuello de botella es que Node.js atiende el cálculo en **un solo hilo**: agregar vCPU a la misma máquina no agrega capacidad de atender peticiones en paralelo, solo deja núcleos sin usar. Además el resize implicó **downtime** y volver a levantar la app a mano. Para cumplir el escenario hace falta repartir las peticiones concurrentes entre varios procesos o máquinas, que es lo que se hace en la Parte 2.
+
 13. Vuelva a dejar la VM en el tamaño inicial para evitar cobros adicionales.
 
 
-Videos 
+Videos
 
-![Video1](https://drive.google.com/file/d/1TN1fA4-5X49dAXoR4kdJkchuQ2SZ5fBZ/view?usp=drive_link)
-![Video2](https://drive.google.com/file/d/1TGOLm27R7wvmSNc3C-X0rt2x3Vr9CUvK/view?usp=drive_link)
+[Video 1](https://drive.google.com/file/d/1TN1fA4-5X49dAXoR4kdJkchuQ2SZ5fBZ/view?usp=drive_link)
+
+[Video 2](https://drive.google.com/file/d/1TGOLm27R7wvmSNc3C-X0rt2x3Vr9CUvK/view?usp=drive_link)
 
 **Preguntas**
 
@@ -224,7 +236,7 @@ n	     D2s_v4 (ms)	D4s_v4 (ms)
 1080000	    14027	       12926
 1090000	    14511	       13394
 
-Interpretación: una sola petición tarda entre 12 y 14.5 segundos. La función es muy costosa: calcula un número de Fibonacci con cifras gigantes (la respuesta pesa ~209 kB) usando un algoritmo ineficiente y no tiene esperas de entrada/salida, por lo que mantiene la CPU ocupada durante todo el cálculo. Además, el tiempo crece más rápido que n: de 1.000.000 a 1.090.000 (+9%) el tiempo sube ~19% en D2s_v4, porque cada paso opera con números más grandes. 
+Interpretación: una sola petición tarda entre 12 y 14.5 segundos. La función es muy costosa: calcula un número de Fibonacci con cifras gigantes (la respuesta pesa ~209 kB) usando un algoritmo ineficiente y no tiene esperas de entrada/salida, por lo que mantiene la CPU ocupada durante todo el cálculo. Además, el tiempo crece más rápido que n: de 1.000.000 a 1.090.000 (+9%) el tiempo sube ~19% en D2s_v4, porque cada paso opera con números más grandes.
 
 5. Adjunte imágen del consumo de CPU de la VM e interprete por qué la función consume esa cantidad de CPU.
 
@@ -233,8 +245,8 @@ Interpretación: una sola petición tarda entre 12 y 14.5 segundos. La función 
 Interpretación: el consumo llega a ~49%, no al 100%. Node.js ejecuta JavaScript en un solo hilo, así que la función satura un núcleo al 100%; como D2s_v4 tiene 2 vCPU, eso equivale a ~50% de la CPU total de la VM. El otro núcleo queda sin usar. (El tramo plano de ~37% al inicio de la primera gráfica corresponde al arranque de la VM, no a la aplicación.)
 
 6. Adjunte la imagen del resumen de la ejecución de Postman. Interprete:
-    * Tiempos de ejecución de cada petición.
-    * Si hubo fallos documentelos y explique.
+   * Tiempos de ejecución de cada petición.
+   * Si hubo fallos documentelos y explique.
 
 ![PRUEBA 1](images/part1/PRUEBA1_T1.png)
 ![PRUEBA 1](images/part1/PRUEBA1_T2.png)
@@ -383,9 +395,9 @@ newman run ARSW_LOAD-BALANCING_AZURE.postman_collection.json -e [ARSW_LOAD-BALAN
 
 ## Desarrollo – Parte 2: Escalabilidad horizontal
 
-> El paso a paso con todas las capturas está en [`EVIDENCIAS.md`](EVIDENCIAS.md). 
+> El paso a paso con todas las capturas está en [`EVIDENCIAS.md`](EVIDENCIAS.md).
 
-### Ajustes 
+### Ajustes
 
 La suscripción de estudiante tiene varios límites, así que al final quedó un poco distinto:
 
@@ -533,25 +545,39 @@ Es el **firewall de red** de las VMs. Tiene reglas de entrada y salida que permi
 
 ### Informe de newman 1 (Punto 2): vertical vs. horizontal
 
+Misma carga en los tres escenarios: colección de newman con `nth = 1000000` y `-n 10` por ejecución.
 
 | Criterio | Vertical – VM pequeña | Vertical – VM escalada | **Horizontal – LB + 3 VMs** |
 |---|---|---|---|
-| Tamaño(s) | _(Parte 1)_ | _(Parte 1)_ | 2× D2s_v3 + 1× D2s_v4 (2 vCPU / 8 GB c/u) |
-| Peticiones exitosas (2 en paralelo) | _(Parte 1)_ / 20 | _(Parte 1)_ / 20 | **20 / 20 (100 %)** |
-| Tiempo promedio por petición | _(Parte 1)_ | _(Parte 1)_ | **19,6 s y 24,1 s** (una VM por flujo) |
-| Estabilidad (desv. est.) | _(Parte 1)_ | _(Parte 1)_ | 277 ms y 424 ms |
-| CPU máxima por VM | _(Parte 1)_ | _(Parte 1)_ | ~50 % (un núcleo de dos) |
-| Costo aprox. de cómputo | _(Parte 1)_ | _(Parte 1)_ | ~0,11 USD/h por VM según el portal (D2s_v3) → **≈ 0,33 USD/h** las 3, más IPs públicas. El LB Estándar entró en las horas gratis de la cuenta de estudiante. |
+| Infraestructura | 1× **D2s_v4** (2 vCPU / 8 GB) | 1× **D4s_v4** (4 vCPU / 16 GB) | 2× **D2s_v3** + 1× **D2s_v4** (2 vCPU / 8 GB c/u) + LB Estándar |
+| **2 en paralelo – peticiones exitosas** | 14 / 20 (**70 %**) | 13 / 20 (**65 %**) | **20 / 20 (100 %)** |
+| 2 en paralelo – tiempo promedio | 18,2 s y 16,9 s | 16,9 s y 18,0 s | 19,6 s y 24,1 s |
+| 2 en paralelo – tiempo máximo | ~24 s | ~24 s | 25,1 s |
+| **4 en paralelo – peticiones exitosas** | – | 26 / 40 (**65 %**) | **34 / 40 (85 %)** con 3 nodos |
+| 4 en paralelo – tiempo promedio | – | ~38,6 s (34,4 – 43,4 s) | 19,2 / 21,2 / 27,8 / 31,5 s |
+| 4 en paralelo – tiempo máximo | – | ~57 s | 56,6 s |
+| CPU máxima | ~49 % | ~24 % | ~50 % por nodo |
+| Costo de cómputo (Linux, Central US) | **0,108 USD/h** | **0,217 USD/h** | 2 × 0,110 + 1 × 0,108 = **0,328 USD/h** |
+| Costos adicionales | 1 IP pública | 1 IP pública | 3 IPs públicas; el LB Estándar entró en las horas gratis de la cuenta de estudiante |
+| Downtime al escalar | – | Sí (reinicio de la VM, la app se levantó a mano) | No (se agregan nodos al pool sin tocar los demás) |
 
-**Conclusiones del comparativo:**
-- **Tiempo de respuesta:** cada petición individual tarda prácticamente lo mismo en una VM grande que en una pequeña, porque el cálculo es de un solo hilo y depende de la velocidad de un núcleo, no de cuántos haya. La diferencia está en la **concurrencia**: en una sola VM las peticiones simultáneas hacen fila; con el LB cada flujo cae en una VM distinta y no espera.
-- **Peticiones exitosas:** con balanceo horizontal y un nodo por flujo concurrente no hubo fallos. Los fallos solo aparecieron cuando hubo más flujos que nodos (punto 3).
-- **Costo:** el horizontal cuesta más por hora (3 máquinas más el LB), pero se puede ajustar a la demanda (agregar o quitar nodos, o automatizarlo con un VM Scale Set) y además da **alta disponibilidad** con las 3 zonas. El vertical tiene un techo (el tamaño máximo de VM), requiere **reiniciar la VM para cambiar de tamaño** (hay caída del servicio) y sigue siendo un punto único de falla.
-- **Escenario de calidad:** con el balanceador y suficientes nodos para la concurrencia, **todas las peticiones se responden y la CPU de cada nodo se mantiene por debajo del 70 %** (~50 %), así que el escenario se cumple. Con más flujos concurrentes que nodos (punto 3) la CPU sigue por debajo del 70 %, pero ya no se responden todas las peticiones, así que para cumplirlo hay que escalar a un nodo por flujo concurrente.
+**Análisis:**
+
+- **Peticiones exitosas.** Es la diferencia más clara. En vertical se pierde ~30-35 % de las peticiones sin importar el tamaño de la VM: escalar de 2 a 4 vCPU **no mejoró nada** (70 % → 65 %). En horizontal, con 2 flujos concurrentes se respondió el **100 %**, e incluso con 4 flujos y solo 3 nodos se llegó al **85 %**, por encima del 65 % de la VM escalada con la misma carga.
+- **Tiempos de respuesta.** En vertical los tiempos promedio con 2 clientes (~17-18 s) incluyen **espera en cola**: una petición sola tarda ~12 s y la segunda tiene que esperar a que el único hilo de Node termine. Con 4 clientes la cola crece y el promedio se va a ~38,6 s. En horizontal no hay cola mientras haya un nodo por flujo: cada ejecución mantuvo tiempos estables (desviación de 99 a 424 ms) y solo aparecieron picos de 46-56 s en los dos flujos que compartieron nodo en la prueba de 4.
+- **Ojo con los tiempos absolutos.** En horizontal cada petición sola tardó ~19-24 s, contra ~12 s en la VM de la Parte 1, así que los tiempos absolutos no son directamente comparables. La causa más probable es la versión de Node: en la Parte 1 se instaló **Node 18 con NVM**, mientras que en la Parte 2 el cloud-init instaló el `nodejs` de los repositorios de Ubuntu 22.04 (**Node 12**), cuyo motor maneja más lento los números gigantes. A eso se suma que VM1 y VM3 son D2s_v3, de una generación de procesador más vieja. Por eso la comparación justa es en **tasa de éxito y en si hay o no cola**, no en segundos por petición.
+- **CPU.** En vertical la CPU "baja" de 49 % a 24 % al escalar, pero es solo un efecto del porcentaje: Node sigue usando un núcleo al 100 % y los demás quedan ociosos. En horizontal cada nodo trabaja a ~50 % (su núcleo al 100 %), pero hay **tres núcleos trabajando en paralelo**, uno por máquina.
+- **Costo.** La infraestructura horizontal es la más cara por hora (0,328 USD/h, ~1,5 veces la VM escalada y ~3 veces la pequeña), más las IPs públicas. A cambio es la única que cumple el escenario, se puede ajustar sumando o quitando nodos (o automatizarlo con un VM Scale Set), no tiene downtime al escalar y, al estar en 3 zonas, da **alta disponibilidad**. La VM escalada cuesta el doble que la pequeña y no da ningún beneficio en este caso.
+
+**Conclusión:** para esta aplicación (CPU-bound y de un solo hilo), **escalar verticalmente no sirve**: se paga más y el porcentaje de fallos sigue igual. **Escalar horizontalmente sí cumple el escenario de calidad** (todas las peticiones respondidas y CPU por debajo del 70 %), siempre que haya al menos un nodo por cada flujo concurrente. Cuando hay más flujos que nodos, la calidad empieza a degradarse (punto 3), y la solución es seguir agregando nodos.
 
 ### Diagrama de despliegue
 
 ![DiagramaDespliege.png](images/part2/DiagramaDespliege.png)
+
+**Explicación del diagrama**
+
+El cliente (newman o el navegador) solo conoce la IP pública del balanceador (`48.214.164.243`, zone-redundant) y le envía las peticiones por HTTP en el puerto 80. Dentro del `SCALABILITY_LAB_LOAD_BALANCER`, el front-end recibe el tráfico y la regla de balanceo lo reenvía al puerto 3000 de alguna de las VMs del backend pool, eligiendo la VM con un hash de 5 tuplas por conexión (sin persistencia de sesión), mientras el health probe revisa cada 5 s por TCP que cada nodo siga respondiendo para no mandarle tráfico a uno caído. Las tres VMs viven en la red privada `SCALABILITY_LAB_VIRTUAL_NETWORK` (`10.1.0.0/16`), dentro de la subred `10.1.0.0/24` protegida por un NSG que solo deja entrar los puertos 22 y 3000, y el LB les habla por sus IPs privadas (por eso VM3 funciona sin IP pública). Cada VM está en una zona de disponibilidad distinta (1, 2 y 3), así que si se cae un datacenter las otras siguen atendiendo, y todas son idénticas: Ubuntu 22.04 con Node.js y la FibonacciApp corriendo como servicio systemd en el puerto 3000, instalada automáticamente con cloud-init. En resumen, hay un único punto de entrada público y varios nodos privados intercambiables detrás, lo que permite escalar horizontalmente con solo agregar otra VM al backend pool, sin que el cliente note el cambio, y además da alta disponibilidad.
 
 ### Limpieza
 
